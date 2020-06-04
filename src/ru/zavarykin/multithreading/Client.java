@@ -2,58 +2,58 @@ package ru.zavarykin.multithreading;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.Scanner;
+
 
 public class Client {
+    private String ip;
+    private int port;
+    private Connection connection;
+    private Socket socket;
 
-    private Socket clientSocket;
-    private BufferedReader reader;
-    private ObjectInputStream input;
-    private ObjectOutputStream output;
-
-
-    // принимаю сообщение от пользователя
-    public Message writeMessageFromClient() throws IOException {
-        reader = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Введите ваше имя...");
-        String name = reader.readLine();
-        System.out.println("Введите ваше сообщение...");
-        String msg = reader.readLine();
-        Message message = new Message(name, msg);
-        return message;
-    }
-    // отправить сообщение на сервер
-    public void sendMessageOnServer(Message message) {
-        try {
-            clientSocket = new Socket("127.0.0.1", 8099);
-            output = new ObjectOutputStream(clientSocket.getOutputStream());
-            output.writeObject(message);
-            output.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+    public Client(String ip, int port) throws IOException {
+        this.ip = ip;
+        this.port = port;
+        socket = new Socket(ip, port);
+        connection = new Connection(socket);
+        readMessageFromServer.start();
     }
 
-    // получить и вывести в консоль сообщение от сервера (отдельный поток)
+    // принимает сообщения от сервера и выводит его в консоль
     Thread readMessageFromServer = new Thread(()-> {
-        try {
-            clientSocket = new Socket("127.0.0.1", 8099);
-            input = new ObjectInputStream(clientSocket.getInputStream());
-            Message message = new Message();
-            message = (Message) input.readObject();
-            System.out.println(message);
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+        Message fromServer = null;
+        while (true) {
+            try {
+                fromServer = connection.readMessage();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            System.out.println("сообщение от сервера " + fromServer);
         }
     });
 
 
-    public static void main(String[] args) {
-
-
+    // формирует сообщение от пользователя из консоли и отправляет его на сервер
+    public void sendMessageOnServer() throws Exception {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
+            System.out.println("Ведите имя");
+            String name = reader.readLine();
+            String text;
+            while (true) {
+                System.out.println("Введите сообщение");
+                text = reader.readLine();
+                connection.sendMessage(Message.getInstance(name, text));
+            }
+        }
     }
 
-
+    public static void main(String[] args) {
+        int port = 8099;
+        String ip = "127.0.0.1";
+        try {
+            new Client(ip, port).sendMessageOnServer();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
 
