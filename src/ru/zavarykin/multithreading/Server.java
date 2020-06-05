@@ -5,9 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
 /*Сервер
 Все соединеия необходимо хранить в мапе или сете (потокобезопасных) В ситуации, когда клиент отсоединяется от сервера,
 его соединение необходимо удалять из мапы / сета.
@@ -22,45 +20,37 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 public class Server {
     private int port;
-    private ConcurrentHashMap<Integer, SomeServer> connections = new ConcurrentHashMap<>(); //
-
+    public static CopyOnWriteArrayList<SomeServer> connections; // набор подключений
+    //public static ArrayBlockingQueue<Message> messages; // очередь сообщений
 
     public Server(int port) {
         this.port = port;
+        connections = new CopyOnWriteArrayList<>();
+        //messages = new ArrayBlockingQueue<Message>(10);
     }
-
-
     // запускаем сервер и считываем сообщения клиентов
     public void start() throws IOException {
         ServerSocket serverSocket = new ServerSocket(port);
         System.out.println("Сервер начал работу..." + Thread.currentThread().getName());
-        int keyMap = 0;
         while (true) {
             Socket clientSocket = serverSocket.accept();   // ждем соединение с клиентом
-            System.out.println("ждем подключения " + Thread.currentThread().getName());
-            connections.put(keyMap, new SomeServer(clientSocket)); // добавляем новое соединение в коллекцию (создается параллельный поток который слушает каждое соединение)
-            System.out.println("подключился - " + connections.get(keyMap));
-            keyMap++;
+            //System.out.println("ждем подключения " + Thread.currentThread().getName());
+            connections.add(new SomeServer(clientSocket)); // добавляем новое соединение в коллекцию (создается параллельный поток который слушает каждое соединение)
+            //System.out.println("подключился - " + connections.get(keyMap));
+
         }
     }
 
     public static void main(String[] args) throws IOException {
         Server server = new Server(8099);
         server.start();
-
     }
-
-
 }
-// принимает сообщение от клиента и выводит в консоле сервера
+// принимает сообщение от клиента добавляет в блокирующую очередь
 class SomeServer extends Thread {
     private Socket clientSocket;
     private Connection connection;
-    private Message fromClient;
-
-    public Message getFromClient() {
-        return fromClient;
-    }
+    private Message message;
 
     public Connection getConnection() {
         return connection;
@@ -71,14 +61,24 @@ class SomeServer extends Thread {
         connection = new Connection(clientSocket);
         start();
     }
+
     @Override
     public void run() {
         while (true){
             try {
-                fromClient = connection.readMessage();
-                System.out.println(fromClient + Thread.currentThread().getName());
+                message = connection.readMessage();  // читаем сообщение от клиента
+                System.out.println(message + Thread.currentThread().getName());
             } catch (Exception e) {
                 e.printStackTrace();
+            }
+            for(SomeServer ss : Server.connections){
+                try {
+                    if (!ss.equals(this)) {
+                        ss.getConnection().sendMessage(message);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
