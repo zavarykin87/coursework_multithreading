@@ -11,10 +11,15 @@ public class Connection {
     private ObjectOutputStream output;
     private ObjectInputStream input;
 
-    public Connection(Socket socket) throws IOException {
+    public Connection(Socket socket) {
         this.socket = socket;
-        output = new ObjectOutputStream(this.socket.getOutputStream());
-        input = new ObjectInputStream(this.socket.getInputStream());
+        try {
+            output = new ObjectOutputStream(this.socket.getOutputStream());
+            input = new ObjectInputStream(this.socket.getInputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+            close();
+        }
     }
 
     public void sendMessage(Message message) {
@@ -23,6 +28,7 @@ public class Connection {
             output.writeObject(message);
             output.flush();
         } catch (IOException e) {
+            e.printStackTrace();
             close();
         }
     }
@@ -32,6 +38,7 @@ public class Connection {
         try {
             message = (Message) input.readObject();
         } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
             close();
         }
         return message;
