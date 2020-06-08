@@ -20,28 +20,18 @@ public class Client {
 
     // принимает сообщения от сервера и выводит его в консоль
     Thread readMessageFromServer = new Thread(()-> {
-        Message fromServer = null;
         while (true) {
-            try {
-                fromServer = connection.readMessage();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            System.out.println("сообщение от сервера " + fromServer);
+                System.out.println(connection.readMessage());
         }
     });
 
-
     // формирует сообщение от пользователя из консоли и отправляет его на сервер
-    public void sendMessageOnServer() throws Exception {
+    public void sendMessageToServer() throws Exception {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
-            System.out.println("Ведите имя");
-            String name = reader.readLine();
-            String text;
             while (true) {
                 System.out.println("Введите сообщение");
-                text = reader.readLine();
-                connection.sendMessage(Message.getInstance(name, text));
+                String text = reader.readLine();
+                connection.sendMessage(new Message(text));
             }
         }
     }
@@ -50,7 +40,7 @@ public class Client {
         int port = 8099;
         String ip = "127.0.0.1";
         try {
-            new Client(ip, port).sendMessageOnServer();
+            new Client(ip, port).sendMessageToServer();
         } catch (Exception e) {
             e.printStackTrace();
         }

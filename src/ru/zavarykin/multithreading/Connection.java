@@ -5,8 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-public class Connection {
-
+public class Connection implements AutoCloseable {
     private Socket socket;
     private ObjectOutputStream output;
     private ObjectInputStream input;
@@ -18,7 +17,6 @@ public class Connection {
             input = new ObjectInputStream(this.socket.getInputStream());
         } catch (IOException e) {
             e.printStackTrace();
-            close();
         }
     }
 
@@ -29,7 +27,6 @@ public class Connection {
             output.flush();
         } catch (IOException e) {
             e.printStackTrace();
-            close();
         }
     }
 
@@ -39,19 +36,14 @@ public class Connection {
             message = (Message) input.readObject();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
-            close();
         }
         return message;
     }
 
-    public void close() {
-        try {
-            input.close();
-            output.close();
-            socket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    @Override
+    public void close() throws Exception {
+        socket.close();
+        input.close();
+        output.close();
     }
-
 }
