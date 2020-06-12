@@ -8,35 +8,25 @@ public class Client {
     private String ip;
     private int port;
     private Connection connection;
-    private Socket socket;
+    private String login;
 
     public Client(String ip, int port) throws IOException {
         this.ip = ip;
         this.port = port;
-        socket = new Socket(ip, port);
-        connection = new Connection(socket);
-        readMessageFromServer.start();
+        connection = new Connection(this.ip, this.port);
     }
-
-    // принимает сообщения от сервера и выводит его в консоль
-    Thread readMessageFromServer = new Thread(()-> {
-        while (true) {
-                System.out.println(connection.readMessage());
-        }
-    });
 
     // формирует сообщение от пользователя из консоли и отправляет его на сервер
     public void sendMessageToServer() throws Exception {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
             while (true) {
-                System.out.println("Введите сообщение");
-                String text = reader.readLine();
-                connection.sendMessage(new Message(text));
+                connection.sendMessage(new Message(reader.readLine()));
             }
         }
     }
 
     public static void main(String[] args) {
+        System.out.println("Добро пожаловать в чат! Для начала введите Ваш логин ...");
         int port = 8099;
         String ip = "127.0.0.1";
         try {

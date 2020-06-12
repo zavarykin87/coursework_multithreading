@@ -3,61 +3,62 @@ package ru.zavarykin.multithreading;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Iterator;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class Server {
     private int port;
-    public static CopyOnWriteArrayList<Reader> connections;
-
+    public static CopyOnWriteArraySet<Connection> connections;
+    public static ArrayBlockingQueue<Message> messages;
 
     public Server(int port) {
         this.port = port;
-        connections = new CopyOnWriteArrayList<>();
+        connections = new CopyOnWriteArraySet<>();
+        messages = new ArrayBlockingQueue<>(10);
     }
-
-    public void start() throws IOException {
-        ServerSocket serverSocket = new ServerSocket(port);
-        System.out.println("Сервер начал работу..." + Thread.currentThread().getName());
-        while (true) {
-            Socket clientSocket = serverSocket.accept();
-            connections.add(new Reader(clientSocket));
+    public void startServer(){
+        System.out.println("Сервер начал работу...");
+        new ServerWriter().start();  // запускаем поток writer
+        try {
+            ServerSocket serverSocket = new ServerSocket(port);
+            while (true){
+                Socket clientSocket = serverSocket.accept();           // ожидаем новое подключение
+                Connection connection = new Connection(clientSocket); // на каждое новое подключение запускаем новый поток который прослушивает клиента
+                connections.add(connection);                         // добавляем новое подключение в коллекцию
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
-
     public static void main(String[] args) throws IOException {
         Server server = new Server(8099);
-        server.start();
+        server.startServer();
     }
 }
+// отдельный поток перебирает список соединений и рассылает по ним сообщение из очереди
+// если соединение было прервано то этот поток удаляет его из коллекции
+class ServerWriter extends Thread {
+    public void run(){
 
-class Reader extends Thread {
-    private Socket clientSocket;
-    private Connection connection;
-    private Message message;
-
-    public Connection getConnection() {
-        return connection;
-    }
-
-    public Reader(Socket clientSocket) {
-        this.clientSocket = clientSocket;
-        connection = new Connection(clientSocket);
-        start();
-    }
-    @Override
-    public void run() {
         while (true) {
-            try {
-                message = connection.readMessage();  // читаем сообщение от клиента
-                System.out.println(message + Thread.currentThread().getName());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            for (Reader ss : Server.connections) {
-                if (!ss.equals(this)) {
-                    ss.getConnection().sendMessage(message);
+            if(!Server.connections.isEmpty()) {
+                Message message = null;
+                try {
+                    message = Server.messages.take();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
+                for (Connection connection: Server.connections) {
+                        connection.sendMessage(message);
+                }
+
             }
         }
     }
+
 }
+
+
+

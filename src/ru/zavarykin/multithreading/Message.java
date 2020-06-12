@@ -12,17 +12,14 @@ public class Message implements Serializable {
         this.text = text;
     }
 
-    public Message() {
-    }
-
     public void setDateTime() {
         this.dateTime = LocalDateTime.now();
     }
 
     @Override
     public String toString() {
-        return "SimpleMessage{" +
-                ", text='" + text + '\'' +
+        return "Message{" +
+                "text='" + text + '\'' +
                 ", dateTime=" + dateTime +
                 '}';
     }
