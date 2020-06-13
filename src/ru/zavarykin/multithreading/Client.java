@@ -20,13 +20,18 @@ public class Client {
     public void sendMessageToServer() throws Exception {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
             while (true) {
-                connection.sendMessage(new Message(reader.readLine()));
+                Message message = new Message(reader.readLine());
+                connection.sendMessage(message);
+                if(message.getText().equalsIgnoreCase("exit")){
+                    break;
+                }
+
             }
         }
     }
 
     public static void main(String[] args) {
-        System.out.println("Добро пожаловать в чат! Для начала введите Ваш логин ...");
+        System.out.println("Добро пожаловать в чат! Введите ваше сообщение...\nДля выхода из чата введите exit");
         int port = 8099;
         String ip = "127.0.0.1";
         try {

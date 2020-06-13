@@ -6,16 +6,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Iterator;
 
 public class Connection {
     private Socket socket;
     private ObjectOutputStream output;
     private ObjectInputStream input;
-    private Thread reader;
-
-    public Thread getReader() {
-        return reader;
-    }
+    private Thread reader;  // нить которая будет прослушивать каждое новое соединение
 
     // конструктор для серверной части
     public Connection(Socket socket) throws IOException {
@@ -25,12 +22,17 @@ public class Connection {
        reader = new Thread(()->{
            while (!reader.isInterrupted()){
                Message message = readMessage();
-               try {
-                   Server.messages.put(message);
-                   System.out.println(message);
-               } catch (InterruptedException | NullPointerException e) {
-                  // e.printStackTrace();
-                   close();
+               if(message.getText().equalsIgnoreCase("exit") || this.socket.isClosed()){  // если входящее сообщение равно exit или сокет был закрыт то соединение удаляется из коллекции
+                   Server.connections.remove(this);
+               }
+               else {
+                   try {
+                       Server.messages.put(message); // складывает входящие сообщения в очередь
+                       System.out.println(message);
+                   } catch (InterruptedException | NullPointerException e) {
+                       e.printStackTrace();
+                       close();
+                   }
                }
            }
        });
@@ -57,7 +59,7 @@ public class Connection {
             output.writeObject(message);
             output.flush();
         } catch (IOException e) {
-            //e.printStackTrace();
+            e.printStackTrace();
             close();
         }
     }
@@ -68,7 +70,7 @@ public class Connection {
         try {
             message = (Message) input.readObject();
         } catch (IOException | ClassNotFoundException e) {
-            //e.printStackTrace();
+            e.printStackTrace();
             close();
         }
         return message;
