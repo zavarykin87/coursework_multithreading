@@ -1,14 +1,11 @@
 package ru.zavarykin.multithreading;
 
 import java.io.*;
-import java.net.Socket;
-
 
 public class Client {
     private String ip;
     private int port;
     private Connection connection;
-    private String login;
 
     public Client(String ip, int port) throws IOException {
         this.ip = ip;
@@ -25,7 +22,6 @@ public class Client {
                 if(message.getText().equalsIgnoreCase("exit")){
                     break;
                 }
-
             }
         }
     }

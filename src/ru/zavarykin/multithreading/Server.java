@@ -26,7 +26,7 @@ public class Server {
             while (true){
                 Socket clientSocket = serverSocket.accept();           // ожидаем новое подключение
                 Connection connection = new Connection(clientSocket); // на каждое новое подключение запускаем новый поток который прослушивает клиента
-                connections.add(connection);                         // добавляем новое подключение в коллекцию
+                connections.add(connection);                         // добавляем новое подключение в список
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -38,7 +38,6 @@ public class Server {
     }
 }
 // отдельный поток перебирает список соединений и рассылает по ним сообщение из очереди
-// если соединение было прервано то этот поток удаляет его из коллекции
 class ServerWriter extends Thread {
     public void run(){
 
@@ -51,7 +50,9 @@ class ServerWriter extends Thread {
                     e.printStackTrace();
                 }
                 for (Connection connection: Server.connections) {
+                    if(connection.getMarkerMessage()!=message) {
                         connection.sendMessage(message);
+                    }
                 }
 
             }

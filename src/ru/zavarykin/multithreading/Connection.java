@@ -8,11 +8,20 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Iterator;
 
-public class Connection {
+public class Connection implements AutoCloseable {
     private Socket socket;
     private ObjectOutputStream output;
     private ObjectInputStream input;
     private Thread reader;  // нить которая будет прослушивать каждое новое соединение
+    private Message markerMessage;
+
+    public Message getMarkerMessage() {
+        return markerMessage;
+    }
+
+    public void setMarkerMessage(Message markerMessage) {
+        this.markerMessage = markerMessage;
+    }
 
     // конструктор для серверной части
     public Connection(Socket socket) throws IOException {
@@ -22,8 +31,9 @@ public class Connection {
        reader = new Thread(()->{
            while (!reader.isInterrupted()){
                Message message = readMessage();
-               if(message.getText().equalsIgnoreCase("exit") || this.socket.isClosed()){  // если входящее сообщение равно exit или сокет был закрыт то соединение удаляется из коллекции
-                   Server.connections.remove(this);
+               setMarkerMessage(message);
+               if(message.getText().equalsIgnoreCase("exit") || this.socket.isClosed()){
+                   Server.connections.remove(this); // соединение удаляется из списка
                }
                else {
                    try {
@@ -75,6 +85,7 @@ public class Connection {
         }
         return message;
     }
+
     // закрыть поток и сокет
     public synchronized void close() {
         reader.interrupt();
