@@ -25,7 +25,6 @@ public class Client {
             }
         }
     }
-
     public static void main(String[] args) {
         System.out.println("Добро пожаловать в чат! Введите ваше сообщение...\nДля выхода из чата введите exit");
         int port = 8099;

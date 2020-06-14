@@ -40,7 +40,6 @@ public class Connection implements AutoCloseable {
                        Server.messages.put(message); // складывает входящие сообщения в очередь
                        System.out.println(message);
                    } catch (InterruptedException | NullPointerException e) {
-                       e.printStackTrace();
                        close();
                    }
                }
@@ -48,7 +47,6 @@ public class Connection implements AutoCloseable {
        });
        reader.start();
     }
-
     // консруктор соединения для клиентской части
     public Connection(String ip, int port) throws IOException {
         socket = new Socket(ip, port);
@@ -61,7 +59,6 @@ public class Connection implements AutoCloseable {
         });
         reader.start();
     }
-
     // отправка сообщений
     public void sendMessage(Message message) {
         message.setDateTime();
@@ -69,23 +66,19 @@ public class Connection implements AutoCloseable {
             output.writeObject(message);
             output.flush();
         } catch (IOException e) {
-            e.printStackTrace();
             close();
         }
     }
-
     // чтение сообщений
     public Message readMessage() {
         Message message = null;
         try {
             message = (Message) input.readObject();
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
             close();
         }
         return message;
     }
-
     // закрыть поток и сокет
     public synchronized void close() {
         reader.interrupt();
